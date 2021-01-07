@@ -197,9 +197,9 @@ export class EQ3MQTTClient extends EventEmitter {
   }
 
   public setDisplayLock(deviceBleAddress: string, locked: boolean) {
-    let action = 'lock';
+    let action = 'unlock';
     if (locked) {
-      action = 'unlock';
+      action = 'lock';
     }
 
     this.log.info(`set display lock to ${action}`);
