@@ -52,6 +52,7 @@ export declare class EQ3MQTTClient extends EventEmitter {
     setOffsetTemp(deviceBleAddress: string, offset: number): void;
     setTemp(deviceBleAddress: string, temp: number): void;
     setPower(deviceBleAddress: string, on: boolean): void;
+    setDisplayLock(deviceBleAddress: string, locked: boolean): void;
 }
 export {};
 //# sourceMappingURL=EQ3MQTTClient.d.ts.map

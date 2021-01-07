@@ -61,6 +61,9 @@ class EQ3MQTTClient extends events_1.EventEmitter {
         const deviceList = JSON.parse(payload);
         this.log.debug('received device list', deviceList.devices);
         this.emit('devices-discovered', deviceList.devices);
+        deviceList.devices.forEach(device => {
+            this.setDisplayLock(device.bleaddr, true);
+        });
     }
     handleStatusUpdate(payload) {
         const status = JSON.parse(payload);
@@ -107,6 +110,14 @@ class EQ3MQTTClient extends events_1.EventEmitter {
             action = 'on';
         }
         this.log.info(`set power to ${action}`);
+        this.sendCommand(deviceBleAddress, action);
+    }
+    setDisplayLock(deviceBleAddress, locked) {
+        let action = 'lock';
+        if (locked) {
+            action = 'unlock';
+        }
+        this.log.info(`set display lock to ${action}`);
         this.sendCommand(deviceBleAddress, action);
     }
 }
