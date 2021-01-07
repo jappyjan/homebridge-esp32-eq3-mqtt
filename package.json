@@ -1,7 +1,7 @@
 {
   "displayName": "EQ3 ESP32 MQTT by JappyJan",
   "name": "@jappyjan/homebridge-esp32-eq3-mqtt",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "It Controls a EQ3 over BLE via an ESP32",
   "license": "Apache-2.0",
   "repository": {
