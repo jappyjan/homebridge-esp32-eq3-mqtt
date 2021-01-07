@@ -10,13 +10,9 @@ import {Device, EQ3MQTTClient} from '../client/EQ3MQTTClient';
  */
 export class ThermostatAccessory {
   private thermostatService?: Service;
+  private batteryService?: Service;
   private readonly device: Device;
   private readonly log: Logger;
-  private status = {
-    temp: 0,
-    targetTemp: 0,
-    on: false,
-  };
 
   constructor(
     private readonly platform: Plugin,
@@ -28,10 +24,11 @@ export class ThermostatAccessory {
     this.device = accessory.context.device;
     this.log = platform.log;
 
-    this.initializeService();
+    this.initializeThermostatService();
+    this.initializeBatteryService();
   }
 
-  initializeService() {
+  private initializeThermostatService() {
     this.log.info('Adding Thermostat service');
 
     this.thermostatService =
@@ -50,8 +47,16 @@ export class ThermostatAccessory {
         minValue: HEAT_OFF,
         validValues: [0, 1],
         perms: [Perms.PAIRED_READ, Perms.NOTIFY],
+      });
+    this.thermostatService.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
+      .setProps({
+        format: Formats.UINT8,
+        maxValue: HEAT_ON,
+        minValue: HEAT_OFF,
+        validValues: [HEAT_OFF, HEAT_ON],
+        perms: [Perms.PAIRED_READ, Perms.PAIRED_WRITE, Perms.NOTIFY],
       })
-      .on('get', (c) => c(null, this.status.on ? HEAT_OFF : HEAT_ON));
+      .on('set', this.setTargetHeatingCoolingStatus.bind(this));
     this.client.on('change:state', status => {
       let isHeating = true;
 
@@ -63,21 +68,11 @@ export class ThermostatAccessory {
         isHeating = false;
       }
 
-      this.status.on = isHeating;
-
-      this.thermostatService?.setCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, isHeating ? 'HEAT' : 'OFF');
+      this.thermostatService?.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
+        .updateValue(isHeating ? HEAT_ON : HEAT_OFF);
+      this.thermostatService?.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
+        .updateValue(isHeating ? HEAT_ON : HEAT_OFF);
     });
-
-    this.thermostatService.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
-      .setProps({
-        format: Formats.UINT8,
-        maxValue: HEAT_ON,
-        minValue: HEAT_OFF,
-        validValues: [HEAT_OFF, HEAT_ON],
-        perms: [Perms.PAIRED_READ, Perms.PAIRED_WRITE, Perms.NOTIFY],
-      })
-      .on('set', this.setTargetHeatingCoolingStatus.bind(this))
-      .on('get', (c) => c(null, this.status.on ? HEAT_OFF : HEAT_ON));
 
     const MIN_TEMP = 5;
     const MAX_TEMP = 29.5;
@@ -88,10 +83,33 @@ export class ThermostatAccessory {
         minStep: .5,
         unit: Units.CELSIUS,
       })
-      .on('set', this.setTargetTemperature.bind(this))
-      .on('get', (c) => c(null, this.status.targetTemp));
+      .on('set', this.setTargetTemperature.bind(this));
     this.client.on('change:temp', targetTemp => {
-      this.status.targetTemp = targetTemp;
+      this.thermostatService!.getCharacteristic(this.platform.Characteristic.TargetTemperature)
+        .updateValue(targetTemp);
+    });
+  }
+
+  private initializeBatteryService() {
+    this.log.info('Adding Thermostat service');
+
+    this.batteryService =
+      this.accessory.getService(this.platform.Service.Thermostat) ||
+      this.accessory.addService(this.platform.Service.Thermostat);
+
+    this.batteryService.getCharacteristic(this.platform.Characteristic.ChargingState)
+      .updateValue(2); //Not chargable
+
+    this.batteryService.getCharacteristic(this.platform.Characteristic.BatteryLevel).updateValue(100);
+    this.batteryService.getCharacteristic(this.platform.Characteristic.StatusLowBattery).updateValue(0);
+    this.client.on('change:battery', state => {
+      const batteryLevel = state === 'GOOD' ? 100 : 10;
+      const statusLowBattery = state === 'GOOD' ? 0 : 1;
+
+      this.batteryService!.getCharacteristic(this.platform.Characteristic.BatteryLevel)
+        .updateValue(batteryLevel);
+      this.batteryService!.getCharacteristic(this.platform.Characteristic.StatusLowBattery)
+        .updateValue(statusLowBattery);
     });
   }
 

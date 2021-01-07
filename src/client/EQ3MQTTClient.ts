@@ -59,6 +59,7 @@ export class EQ3MQTTClient extends EventEmitter {
   private readonly log: Logger;
   private readonly inTopic: string;
   private readonly outTopic: string;
+  private lastTemp: {[key: string]: number} = {};
 
   constructor(props: Options) {
     super();
@@ -182,18 +183,20 @@ export class EQ3MQTTClient extends EventEmitter {
 
   public setTemp(deviceBleAddress: string, temp: number) {
     this.log.info(`set temperature to ${temp}`);
+    this.setMode(deviceBleAddress, 'manual');
     this.sendCommand(deviceBleAddress, 'settemp', roundToHalf(temp).toString());
+    this.lastTemp[deviceBleAddress] = temp;
   }
 
   public setPower(deviceBleAddress: string, on: boolean) {
-    let action = 'off';
+    this.log.info(`set power to ${on ? 'on' : 'off'}`);
+
     if (on) {
-      action = 'on';
+      this.setTemp(deviceBleAddress, this.lastTemp[deviceBleAddress] || 18);
+      return;
     }
 
-    this.log.info(`set power to ${action}`);
-
-    this.sendCommand(deviceBleAddress, action);
+    this.sendCommand(deviceBleAddress, 'off');
   }
 
   public setDisplayLock(deviceBleAddress: string, locked: boolean) {
