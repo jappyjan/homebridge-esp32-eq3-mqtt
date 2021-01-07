@@ -1,0 +1,28 @@
+{
+  "pluginAlias": "eq3-esp32",
+  "pluginType": "platform",
+  "singular": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "title": "MQTT Host",
+        "type": "string",
+        "required": true,
+        "format": "hostname",
+        "default": "localhost"
+      },
+      "port": {
+        "title": "MQTT Port",
+        "type": "number",
+        "required": true,
+        "default": 1883
+      },
+      "mqttId": {
+        "title": "MQTT Device ID",
+        "type": "string",
+        "required": true
+      }
+    }
+  }
+}
